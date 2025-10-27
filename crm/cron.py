@@ -29,3 +29,26 @@ def log_crm_heartbeat():
     HEARTBEAT_LOG.parent.mkdir(parents=True, exist_ok=True)
     with HEARTBEAT_LOG.open("a", encoding="utf-8") as f:
         f.write(line + "\n")
+
+def update_low_stock():
+    """Execute the GraphQL 'updateLowStockProducts' mutation and log to /tmp/low_stock_updates_log.txt."""
+    log_path = Path("/tmp/low_stock_updates_log.txt")
+    mutation = {
+        "query": "mutation { updateLowStockProducts { success updatedProducts { name stock } } }"
+    }
+    now = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    try:
+        resp = requests.post(GRAPHQL_URL, json=mutation, timeout=20)
+        if resp.ok:
+            data = resp.json().get("data", {}) or {}
+            payload = (data.get("updateLowStockProducts") or {})
+            products = payload.get("updatedProducts", []) or []
+            with log_path.open("a", encoding="utf-8") as f:
+                for p in products:
+                    f.write(f"{now} updated name={p.get('name')} stock={p.get('stock')}\n")
+        else:
+            with log_path.open("a", encoding="utf-8") as f:
+                f.write(f"{now} update failed status={resp.status_code}\n")
+    except Exception as e:
+        with log_path.open("a", encoding="utf-8") as f:
+            f.write(f"{now} update exception={e}\n")
