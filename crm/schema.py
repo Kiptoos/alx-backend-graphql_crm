@@ -31,6 +31,6 @@ class Query(graphene.ObjectType):
         return "world"
 
 class Mutation(graphene.ObjectType):
-    update_low_stock_products = UpdateLowStockProducts.Field(name="updateLowStockProducts")
+    updateLowStockProducts = UpdateLowStockProducts.Field()
 
 schema = graphene.Schema(query=Query, mutation=Mutation)
