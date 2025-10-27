@@ -1,16 +1,15 @@
-#!/bin/bash
-#
-# clean_inactive_customers.sh
-# Deletes customers with no orders in the last year and logs the count with a timestamp.
-# Usage: run from the project root where manage.py is located.
-#
-set -euo pipefail
+    #!/bin/bash
+    # Deletes customers with no orders since a year ago and logs the count.
+    # Run from repo root (where manage.py lives) or adjust the cd path below.
+    set -euo pipefail
 
-LOG_FILE="/tmp/customer_cleanup_log.txt"
-TIMESTAMP="$(date '+%Y-%m-%d %H:%M:%S')"
+    REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
+    cd "$REPO_ROOT"
 
-# Run Django ORM deletion via manage.py shell. Prints the number deleted.
-COUNT=$(python manage.py shell <<'PYCODE'
+    LOG_FILE="/tmp/customer_cleanup_log.txt"
+    TIMESTAMP="$(date '+%Y-%m-%d %H:%M:%S')"
+
+    COUNT=$(python manage.py shell <<'PYCODE'
 from django.utils import timezone
 from datetime import timedelta
 try:
@@ -25,6 +24,6 @@ else:
     qs.delete()
     print(deleted)
 PYCODE
-)
+    )
 
-echo "$TIMESTAMP deleted_customers=$COUNT" >> "$LOG_FILE"
+    echo "$TIMESTAMP deleted_customers=$COUNT" >> "$LOG_FILE"
