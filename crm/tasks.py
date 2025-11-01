@@ -6,6 +6,7 @@ import os
 
 @shared_task
 def generatecrmreport():
+    """Celery task that logs to /tmp/crmreportlog.txt"""
     timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     line = f"{timestamp} - Report: 0 customers, 0 orders, 0 revenue\n"
 
