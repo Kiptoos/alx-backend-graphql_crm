@@ -1,6 +1,6 @@
-# Celery Task for Generating CRM Reports
+# Celery Task Setup
 
-## Setup Steps
+Create `crm/README.md` with steps to:
 
 1. Install Redis and dependencies.
 2. Run migrations (python manage.py migrate).
