@@ -1,23 +1,19 @@
-# Celery + Celery Beat (Optional Task 4)
+# CRM Celery Setup
 
-## Install Redis & dependencies
-- Install Redis locally, e.g. on Ubuntu: `sudo apt-get install redis-server`
-- Python dependencies are in `requirements.txt`
+This project uses **Celery** + **Redis** + **django-celery-beat** to run scheduled background tasks.
+The scheduled task generates a **weekly CRM report** from the GraphQL API and appends it to
+`/tmp/crm_report_log.txt`.
 
-## Run migrations
+## 1. Prerequisites
+
+- Python 3.10+ (recommended)
+- Django installed
+- Redis installed and running locally on default port
+
+### Install Redis (Ubuntu/Debian)
+
 ```bash
-python manage.py migrate
-```
-
-## Start Celery worker
-```bash
-celery -A crm worker -l info
-```
-
-## Start Celery Beat
-```bash
-celery -A crm beat -l info
-```
-
-## Verify weekly report logs
-- Check `/tmp/crm_report_log.txt` after the scheduled time (Mon 06:00).
+sudo apt-get update
+sudo apt-get install redis-server
+sudo systemctl enable redis-server
+sudo systemctl start redis-server
