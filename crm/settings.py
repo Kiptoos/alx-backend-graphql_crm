@@ -5,7 +5,7 @@ INSTALLED_APPS = [
     "django_celery_beat",
     # ...
 ]
-
+from celery.schedules import crontab
 # Celery broker & backend
 CELERY_BROKER_URL = "redis://localhost:6379/0"
 CELERY_RESULT_BACKEND = "redis://localhost:6379/0"
@@ -14,7 +14,7 @@ CELERY_RESULT_BACKEND = "redis://localhost:6379/0"
 CELERY_ENABLE_UTC = False
 CELERY_TIMEZONE = "Africa/Nairobi"
 
-from celery.schedules import crontab
+
 
 CELERY_BEAT_SCHEDULE = {
     "generate-crm-report": {
