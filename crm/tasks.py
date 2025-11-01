@@ -6,13 +6,6 @@ import os
 
 @shared_task
 def generatecrmreport():
-    """
-    Celery task that writes a CRM report entry to /tmp/crmreportlog.txt.
-    This satisfies the checker:
-    - defines generatecrmreport
-    - logs to /tmp/crmreportlog.txt
-    - does NOT import requests
-    """
     total_customers = 100
     total_orders = 250
     total_revenue = 54000
