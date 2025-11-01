@@ -1,41 +1,81 @@
-from celery import shared_task
+# crm/tasks.py
+import os
 from datetime import datetime
-from pathlib import Path
-from decimal import Decimal
+from celery import shared_task
+from django.conf import settings
 
-from gql import gql, Client
-from gql.transport.requests import RequestsHTTPTransport
+# adjust this import to where your GraphQL schema lives
+# e.g. from crm.schema import schema
+try:
+    from crm.schema import schema
+except ImportError:
+    # fallback: if your schema is e.g. in apps.crm_api.schema
+    schema = None
 
-LOG = Path("/tmp/crm_report_log.txt")
-GRAPHQL_URL = "http://localhost:8000/graphql"
+
+LOG_PATH = "/tmp/crm_report_log.txt"
+
 
 @shared_task
 def generate_crm_report():
-    """Fetch totals via GraphQL and log a weekly CRM report."""
-    transport = RequestsHTTPTransport(url=GRAPHQL_URL, verify=False, retries=3, timeout=20)
-    client = Client(transport=transport, fetch_schema_from_transport=False)
+    """
+    Celery task that runs a GraphQL query to fetch:
+      - total customers
+      - total orders
+      - total revenue
+    and appends to /tmp/crm_report_log.txt
+    """
+    if schema is None:
+        # If we can't import schema, fail gracefully
+        msg = f"{_timestamp()} - ERROR: GraphQL schema not found; cannot generate report.\n"
+        _write_log(msg)
+        return msg
 
-    query = gql('''
-        query CRMReport {
-          totals {
-            customers
-            orders
-            revenue
-          }
-        }
-    ''')
+    # This GraphQL query must match your actual schema fields.
+    # Adjust names if your schema differs.
+    query = """
+    query CRMReport {
+      customersCount
+      ordersAggregate {
+        totalCount
+        totalRevenue
+      }
+    }
+    """
 
-    try:
-        data = client.execute(query)
-        totals = data.get("totals", {}) if data else {}
-        customers = totals.get("customers", 0)
-        orders = totals.get("orders", 0)
-        revenue = totals.get("revenue", 0)
-    except Exception:
-        customers = orders = 0
-        revenue = 0
+    # Execute GraphQL query
+    result = schema.execute(query)
 
-    now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-    LOG.parent.mkdir(parents=True, exist_ok=True)
-    with LOG.open("a", encoding="utf-8") as f:
-        f.write(f"{now} - Report: {customers} customers, {orders} orders, {revenue} revenue\n")
+    if result.errors:
+        msg = f"{_timestamp()} - ERROR: {result.errors}\n"
+        _write_log(msg)
+        return msg
+
+    data = result.data or {}
+
+    # Adjust to match the structure returned by your schema
+    total_customers = data.get("customersCount", 0)
+    orders_agg = data.get("ordersAggregate") or {}
+    total_orders = orders_agg.get("totalCount", 0)
+    total_revenue = orders_agg.get("totalRevenue", 0)
+
+    # Build final log line
+    log_line = (
+        f"{_timestamp()} - Report: {total_customers} customers, "
+        f"{total_orders} orders, {total_revenue} revenue\n"
+    )
+    _write_log(log_line)
+    return log_line
+
+
+def _write_log(text: str):
+    # ensure directory exists
+    dir_name = os.path.dirname(LOG_PATH)
+    if dir_name and not os.path.exists(dir_name):
+        os.makedirs(dir_name, exist_ok=True)
+    with open(LOG_PATH, "a") as f:
+        f.write(text)
+
+
+def _timestamp():
+    return datetime.now().strftime("%Y-%m-%d %H:%M:%S")
